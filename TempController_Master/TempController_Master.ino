@@ -310,17 +310,17 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                         }
                 }
                 delay(100);
-                //Serial.print("Cloud Data :"); Serial.println(ReadCloudData);
+                Serial.print("Cloud Data :"); Serial.println(ReadCloudData);
                               FVariant=0;
                               if (ReadCloudData.indexOf("MINTEMP:") >=0) {
                                 //Serial.println("reading min temp..");
                                 T1 = ReadCloudData.substring(8,12);                                                              
                                 FVariant = T1.toInt();
                                 //Serial.println(FVariant);
-                                //Serial.print("Minimum Temperature :") ; Serial.println(FVariant);
+                                Serial.print("Minimum Temperature :") ; Serial.println(FVariant);
                                 if ((DeviceStopTemp != FVariant ) && (FVariant != 0) ) {                                  
                                     DeviceStopTemp = FVariant;
-                                   //Serial.print("new min value-");Serial.println(DeviceStopTemp);
+                                   Serial.print("new min value-");Serial.println(DeviceStopTemp);
                                   StoreVariablesOntoMemory;
                                 }
                                 if (DeviceStopTemp < MinimumTemp) { DeviceStopTemp = MinimumTemp;}
