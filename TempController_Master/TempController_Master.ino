@@ -265,6 +265,7 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                                       TextToSend += 0;                                  
                                       TextToSend.toCharArray(SData, 300);
                                       SendDataViaWire();
+                                      SendDataToESP8266();
                                   }
                                   
                           }
@@ -310,7 +311,7 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                         }
                 }
                 delay(100);
-                Serial.print("Cloud Data :"); Serial.println(ReadCloudData);
+ //               Serial.print("Cloud Data :"); Serial.println(ReadCloudData);
                               FVariant=0;
                               if (ReadCloudData.indexOf("MINTEMP:") >=0) {
                                 //Serial.println("reading min temp..");
@@ -320,7 +321,7 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                                 Serial.print("Minimum Temperature :") ; Serial.println(FVariant);
                                 if ((DeviceStopTemp != FVariant ) && (FVariant != 0) ) {                                  
                                     DeviceStopTemp = FVariant;
-                                   Serial.print("new min value-");Serial.println(DeviceStopTemp);
+                                   //Serial.print("new min value-");Serial.println(DeviceStopTemp);
                                   StoreVariablesOntoMemory;
                                 }
                                 if (DeviceStopTemp < MinimumTemp) { DeviceStopTemp = MinimumTemp;}
