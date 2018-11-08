@@ -76,7 +76,7 @@ SoftwareSerial mySerial(6, 7);
       #define  MEMLOC_AverageOFFTime            50
 
       #define  MEMLOC_ONAndOFFTimeLocations     60  
-      #define  MEMLOC_DeviceTempSettings        65
+      #define  MEMLOC_DeviceTempSettings        65 
       #define  MEMLOC_DeviceStartTime           70
       #define  MEMLOC_DeviceStopTime            75
       #define  MEMLOC_DeviceONOrOFF             80
@@ -107,6 +107,7 @@ SoftwareSerial mySerial(6, 7);
       int DeviceStartTime,DeviceStopTime,DevicePreviousStopTime;    // TIME AT WHICH THE EQUIPMENT STARTS AND ENDS
       int Voltage;                                                  // VOLTAGE STORING AREA
       int Current,Current_Previous;                                 // Current STORING AREA
+      int cloudMin,cloudMax,previousCloudMin=0,previousCloudMax=0;
       boolean DeviceONOrOFF = false ;                               // IS THE DEVICE TURNED ON OR OFF
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -225,16 +226,18 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                             CurrentTemp = CurrentTemp/100*100 + CurrentTemp%100;    // CONVERT THE DECIMALS INTO FULL DIGITS
                         }
                         
-////////////////////  TO SEND THE STATUS OF THE DEVICE WHETHER IT IS ON OR OFF BASED ON TEMPERATURE 
+////////////////////  TO SEND THE STATUS OF THE DEVICE WHETHER IT IS ON OR OFF BASED ON TEMPERATURE                     
                     if ( second%10 == 0 ) {
+                            getMinValue();
+                            getMaxValue();
                             if  (CurrentTemp >=  DeviceStartTemp){// || CurrentTemp > DeviceStopTemp) ) {  //IF THE TEMPERATURE IS BETWEEN ST VALUES, OR DEVICE IS ALREADY ON
-                              // CURRENT TEMP IS WITHIN DEVICE TURNING ON
+                              // CURRENT TEMP IS WITHIN DEVICE TURNING ON                              
                               DeviceActivity(true);
                             }
                             
                             if (CurrentTemp <=  DeviceStopTemp )   
                               //IF THE TEMPERATURE IS BETWEEN ST VALUES, OR DEVICE IS ALREADY ON
-                             {
+                             {                              
                               DeviceActivity(false);
                             }
                     }
@@ -310,38 +313,36 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                         ReadCloudData += inChar;                        
                         }
                 }
+
+               switch((char)ReadCloudData[0]){
+                case 'M':
+                        T1 = ReadCloudData.substring(8,12);
+                        cloudMin = T1.toInt();
+                        //Serial.print("cloud min-");Serial.println(cloudMin);
+                        if(cloudMin != 0)
+                        {
+                          storeMinValue(cloudMin);
+                          previousCloudMin = cloudMin;
+                        }
+                        break;
+
+                case 'X':
+                        T1 = ReadCloudData.substring(8,12);
+                        cloudMax = T1.toInt();
+                        //Serial.print("cloud max-");Serial.println(cloudMax);
+                        if(cloudMax != 0)
+                        {
+                          storeMaxValue(cloudMax);
+                          previousCloudMax = cloudMax;
+                        }
+                        break;
+               }
                 delay(100);
- //               Serial.print("Cloud Data :"); Serial.println(ReadCloudData);
-                              FVariant=0;
-                              if (ReadCloudData.indexOf("MINTEMP:") >=0) {
-                                //Serial.println("reading min temp..");
-                                T1 = ReadCloudData.substring(8,12);                                                              
-                                FVariant = T1.toInt();
-                                //Serial.println(FVariant);
-                                Serial.print("Minimum Temperature :") ; Serial.println(FVariant);
-                                if ((DeviceStopTemp != FVariant ) && (FVariant != 0) ) {                                  
-                                    DeviceStopTemp = FVariant;
-                                   //Serial.print("new min value-");Serial.println(DeviceStopTemp);
-                                  StoreVariablesOntoMemory;
-                                }
-                                if (DeviceStopTemp < MinimumTemp) { DeviceStopTemp = MinimumTemp;}
-                              }
+//                Serial.print("Cloud Data :"); Serial.println(ReadCloudData);
                               
-                              else if (ReadCloudData.indexOf("MAXTEMP:") >=0) {
-                                //Serial.println("reading max temp..");
-                                T1 = ReadCloudData.substring(8,12);
-                                FVariant = T1.toInt();
-                                //Serial.println(FVariant);
-                                //Serial.print("Maximum Temperature :") ; Serial.println(FVariant);                                  
-                               if ((DeviceStartTemp != FVariant) && (FVariant !=0) ) {
-                                   DeviceStartTemp = FVariant;
-                                   //Serial.print("new max value-");Serial.println(DeviceStartTemp);
-                                  StoreVariablesOntoMemory;
-                                }
-                                if (DeviceStartTemp > MaximumTemp || DeviceStartTemp < MinimumTemp ) { DeviceStartTemp = MaximumTemp;}
-                              }
-                              
-                              //SEND DEVICESTOPTEMP TO SERIAL.WRITE 
+                              //SEND DEVICESTOPTEMP TO SERIAL.WRITE
+                              //getMinValue();
+                              //getMaxValue(); 
                                 if (DeviceStopTemp !=0) {
                                     T1 = "MIN-EEPROM:";
                                     T1+= DeviceStopTemp;
@@ -529,6 +530,8 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
 
             if (DeviceStopTemp < MinimumTemp) { DeviceStopTemp = MinimumTemp ;}
             if (DeviceStartTemp > MaximumTemp || DeviceStartTemp < MinimumTemp) { DeviceStartTemp = MaximumTemp ;}
+            Serial.print("Stop temperature :");Serial.println(DeviceStopTemp);
+            Serial.print("Start temperature :");Serial.println(DeviceStartTemp);
                    
          }
 /////////////// GET THE VARIOUS EEPROM AND GET THEM INTO THE FLOAT ///////////////////////////////
@@ -610,6 +613,7 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                 
                 StoreCalculatedValue(AverageONTime,MEMLOC_AverageONTime);
                 StoreCalculatedValue(AverageOFFTime,MEMLOC_AverageOFFTime);
+                
                   
                 EEPROM.write(MEMLOC_CurrentRunningTime, (byte) CurrentRunningTime/100);
                 EEPROM.write(MEMLOC_CurrentRunningTime+1, (byte) CurrentRunningTime%100);
@@ -619,6 +623,32 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                 EEPROM.write(MEMLOC_DeviceTempSettings+3,(byte) DeviceStopTemp%100) ;
                     
          }
+
+         void storeMinValue(int Min){
+                //Serial.print("min");Serial.println(Min);
+                EEPROM.put(MEMLOC_DeviceTempSettings+2, Min/100) ;
+                EEPROM.put(MEMLOC_DeviceTempSettings+3, Min%100) ;
+                
+         }
+
+         void storeMaxValue(int Max){
+                EEPROM.put(MEMLOC_DeviceTempSettings, Max/100) ;
+                EEPROM.put(MEMLOC_DeviceTempSettings+1, Max%100) ;
+         }
+
+         void getMinValue(){
+          DeviceStopTemp= (int) EEPROM.read(MEMLOC_DeviceTempSettings+2)*100 + (int) EEPROM.read(MEMLOC_DeviceTempSettings+3);   //THE VALUE AT WHICH THE DEVICE TURNS OFF          
+          //Serial.print("ee min-");Serial.println(DeviceStopTemp);
+         }
+
+         void getMaxValue(){
+          DeviceStartTemp = (int) EEPROM.read(MEMLOC_DeviceTempSettings)*100 + (int) EEPROM.read(MEMLOC_DeviceTempSettings+1);   //THE VALUE AT WHICH THE DEVICE TURNS ONN
+          //Serial.print("ee max-");Serial.println(DeviceStartTemp);
+         }
+
+         
+
+         
 
                 
          void NullifyMemory(){
