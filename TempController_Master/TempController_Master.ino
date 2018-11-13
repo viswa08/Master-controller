@@ -345,7 +345,7 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                               //SEND DEVICESTOPTEMP TO SERIAL.WRITE
                               //getMinValue();
                               //getMaxValue(); 
-                                if (DeviceStopTemp !=0) {
+                                if (DeviceStopTemp !=0) {  //value read from max eeprom is sent to esp
                                     T1 = "MIN-EEPROM:";
                                     T1+= DeviceStopTemp;
                                     T1.toCharArray(SData,300);
