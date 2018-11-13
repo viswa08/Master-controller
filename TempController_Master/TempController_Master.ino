@@ -78,6 +78,7 @@ SoftwareSerial mySerial(6, 7);
       #define  MEMLOC_ONAndOFFTimeLocations     60  
       #define  MEMLOC_DeviceTempMaxSettings     65
       #define  MEMLOC_DeviceTempMinSettings     68
+      #define  MEMLOC_DeviceTempSettings        65 
       #define  MEMLOC_DeviceStartTime           70
       #define  MEMLOC_DeviceStopTime            75
       #define  MEMLOC_DeviceONOrOFF             80
@@ -260,9 +261,12 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                           if ( second%20 == 0 ) {
                               Amp = CurrentSensor.getCurrentAC();
                               Serial.println(String("Current As per Sensor :")+Amp+" Amps"); 
+                              FVariant = CurrentSensor.getCurrentAC();
+                              Serial.println(String("Current As per Sensor :")+FVariant+" Amps"); 
                               TextToSend = "AMPS :";
                                   if (DeviceONOrOFF == true) {//SEND THE CURRENT ONLYWHEN THE CHILLER IS ON
                                       TextToSend += Amp;                                  
+                                      TextToSend += FVariant;                                  
                                       TextToSend.toCharArray(SData, 300);
                                       SendDataViaWire();
                                       SendDataToESP8266();
@@ -323,6 +327,7 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                         cloudMin = T1.toInt();
                         //Serial.print("cloud min-");Serial.println(cloudMin);
                         if(cloudMin > 0)
+                        if(cloudMin != 0)
                         {
                           storeMinValue(cloudMin);
                           previousCloudMin = cloudMin;
@@ -334,6 +339,7 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                         cloudMax = T1.toInt();
                         //Serial.print("cloud max-");Serial.println(cloudMax);
                         if(cloudMax > 0)
+                        if(cloudMax != 0)
                         {
                           storeMaxValue(cloudMax);
                           previousCloudMax = cloudMax;
@@ -357,6 +363,7 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                                 //SEND DEVICESTARTTEMP TO SERIAL.WRITE 
                                 if (DeviceStartTemp !=0) {
                                       T1 = "XAM-EEPROM:";
+                                      T1 = "MAX-EEPROM:";
                                       T1+= DeviceStartTemp;
                                       T1.toCharArray(SData,300);
                                       SendDataToESP8266(); //Serial.write(SData);
@@ -444,12 +451,22 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                           //        Serial.print(" Device New Pr Stop Time  : "); Serial.println(DevicePreviousStopTime);
 
                           // CALCULATE THE CURRENT WATTS CONSUMED
+<<<<<<< HEAD
+<<<<<<< HEAD
                                   Serial.println("kwh calculation started");
                                   CurrentWatts = CurrentRunningTime/60*Voltage*Amp; // MINUTES * V * I;
                                   KWHCalc+= CurrentWatts/1000;
                                   //Serial.print("current run time");Serial.println(KWH);
                                   //StoreCalculatedValue(KWH, MEMLOC_KWH);
                                   storeKwh(KWHCalc);
+=======
+=======
+>>>>>>> parent of 9cbaf75... kwh added
+                                  CurrentWatts = CurrentRunningTime/60*Voltage*Current; // MINUTES * V * I;
+                                  KWH+= CurrentWatts/1000;
+                                  StoreCalculatedValue(KWH, MEMLOC_KWH);
+ 
+>>>>>>> parent of 9cbaf75... kwh added
                                   EEPROM.write(MEMLOC_DeviceStopTime,(byte) (DevicePreviousStopTime/100)) ; delay(25);
                                   EEPROM.write(MEMLOC_DeviceStopTime+1,(byte) (DevicePreviousStopTime%100)) ;                                   
 /*                                   
@@ -536,9 +553,13 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
 
             DeviceStartTemp = (int) EEPROM.read(MEMLOC_DeviceTempMaxSettings)*100 + (int) EEPROM.read(MEMLOC_DeviceTempMaxSettings+1);   //THE VALUE AT WHICH THE DEVICE TURNS ONN
             DeviceStopTemp= (int) EEPROM.read(MEMLOC_DeviceTempMinSettings)*100 + (int) EEPROM.read(MEMLOC_DeviceTempMinSettings+1);   //THE VALUE AT WHICH THE DEVICE TURNS OFF
+            DeviceStartTemp = (int) EEPROM.read(MEMLOC_DeviceTempSettings)*100 + (int) EEPROM.read(MEMLOC_DeviceTempSettings+1);   //THE VALUE AT WHICH THE DEVICE TURNS ONN
+            DeviceStopTemp= (int) EEPROM.read(MEMLOC_DeviceTempSettings+2)*100 + (int) EEPROM.read(MEMLOC_DeviceTempSettings+3);   //THE VALUE AT WHICH THE DEVICE TURNS OFF
 
             //if (DeviceStopTemp < MinimumTemp) { DeviceStopTemp = MinimumTemp ;}
             //if (DeviceStartTemp > MaximumTemp || DeviceStartTemp < MinimumTemp) { DeviceStartTemp = MaximumTemp ;}
+            if (DeviceStopTemp < MinimumTemp) { DeviceStopTemp = MinimumTemp ;}
+            if (DeviceStartTemp > MaximumTemp || DeviceStartTemp < MinimumTemp) { DeviceStartTemp = MaximumTemp ;}
             Serial.print("Stop temperature :");Serial.println(DeviceStopTemp);
             Serial.print("Start temperature :");Serial.println(DeviceStartTemp);
                    
@@ -630,6 +651,10 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                 //EEPROM.write(MEMLOC_DeviceTempSettings+1,(byte) DeviceStartTemp%100) ;
                 //EEPROM.write(MEMLOC_DeviceTempSettings+2,(byte) DeviceStopTemp/100) ;
                 //EEPROM.write(MEMLOC_DeviceTempSettings+3,(byte) DeviceStopTemp%100) ;
+                EEPROM.write(MEMLOC_DeviceTempSettings,(byte) DeviceStartTemp/100) ;
+                EEPROM.write(MEMLOC_DeviceTempSettings+1,(byte) DeviceStartTemp%100) ;
+                EEPROM.write(MEMLOC_DeviceTempSettings+2,(byte) DeviceStopTemp/100) ;
+                EEPROM.write(MEMLOC_DeviceTempSettings+3,(byte) DeviceStopTemp%100) ;
                     
          }
 
@@ -637,22 +662,31 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                 //Serial.print("min");Serial.println(Min);
                 EEPROM.put(MEMLOC_DeviceTempMinSettings, Min/100) ;
                 EEPROM.put(MEMLOC_DeviceTempMinSettings+1, Min%100) ;
+                EEPROM.put(MEMLOC_DeviceTempSettings+2, Min/100) ;
+                EEPROM.put(MEMLOC_DeviceTempSettings+3, Min%100) ;
                 
          }
 
          void storeMaxValue(int Max){
                 EEPROM.put(MEMLOC_DeviceTempMaxSettings, Max/100) ;
                 EEPROM.put(MEMLOC_DeviceTempMaxSettings+1, Max%100) ;
+                EEPROM.put(MEMLOC_DeviceTempSettings, Max/100) ;
+                EEPROM.put(MEMLOC_DeviceTempSettings+1, Max%100) ;
          }
 
          void getMinValue(){
           DeviceStopTemp= (int) EEPROM.read(MEMLOC_DeviceTempMinSettings)*100 + (int) EEPROM.read(MEMLOC_DeviceTempMinSettings+1);   //THE VALUE AT WHICH THE DEVICE TURNS OFF          
           Serial.print("ee min-");Serial.println(DeviceStopTemp);
+          DeviceStopTemp= (int) EEPROM.read(MEMLOC_DeviceTempSettings+2)*100 + (int) EEPROM.read(MEMLOC_DeviceTempSettings+3);   //THE VALUE AT WHICH THE DEVICE TURNS OFF          
+          //Serial.print("ee min-");Serial.println(DeviceStopTemp);
          }
 
          void getMaxValue(){
           DeviceStartTemp = (int) EEPROM.read(MEMLOC_DeviceTempMaxSettings)*100 + (int) EEPROM.read(MEMLOC_DeviceTempMaxSettings+1);   //THE VALUE AT WHICH THE DEVICE TURNS ONN
           Serial.print("ee max-");Serial.println(DeviceStartTemp);
+          DeviceStartTemp = (int) EEPROM.read(MEMLOC_DeviceTempSettings)*100 + (int) EEPROM.read(MEMLOC_DeviceTempSettings+1);   //THE VALUE AT WHICH THE DEVICE TURNS ONN
+          //Serial.print("ee max-");Serial.println(DeviceStartTemp);
+<<<<<<< HEAD
          }
 
          void storeKwh(float kwh){
@@ -662,6 +696,8 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
          float getKwh(){
           float kwh = EEPROM.read(MEMLOC_KWH);
           return kwh;
+=======
+>>>>>>> parent of 9cbaf75... kwh added
          }
 
          
