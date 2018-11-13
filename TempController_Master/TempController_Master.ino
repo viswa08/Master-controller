@@ -64,7 +64,7 @@ SoftwareSerial mySerial(6, 7);
       // EEPROM MEMORY LOCATIONS USED IN THE PROGRAM
       //------------------------------------------*/
       #define  MEMLOC_FirstTimeRun              0
-      #define  MEMLOC_KWH                       10
+      #define  MEMLOC_KWH                       5
       #define  MEMLOC_CurrentWatts              15
       #define  MEMLOC_CurrentRunningTime        20
       #define  MEMLOC_TotalNoOfONs              25
@@ -93,6 +93,7 @@ SoftwareSerial mySerial(6, 7);
       // VARIABLES USED IN THE PROGRAM
       //------------------------------------------*/
       float KWH;                                                    // TOTAL KWH COUNTING
+      float KWHCalc;                                                //calculated KWH value
       float CurrentWatts = 0 ;                                      // CURRENT USAGE WATTS
       float CurrentRunningTime = 0;                                 // CURRENT RUNNING TIME
       float TotalNoOfONs;                                           // TOTAL TIMES THE DEVICE HAS TURNED ON
@@ -445,10 +446,10 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                           // CALCULATE THE CURRENT WATTS CONSUMED
                                   Serial.println("kwh calculation started");
                                   CurrentWatts = CurrentRunningTime/60*Voltage*Amp; // MINUTES * V * I;
-                                  KWH+= CurrentWatts/1000;
-                                  Serial.print("current run time");Serial.println(KWH);
-                                  StoreCalculatedValue(KWH, MEMLOC_KWH);
- 
+                                  KWHCalc+= CurrentWatts/1000;
+                                  //Serial.print("current run time");Serial.println(KWH);
+                                  //StoreCalculatedValue(KWH, MEMLOC_KWH);
+                                  storeKwh(KWHCalc);
                                   EEPROM.write(MEMLOC_DeviceStopTime,(byte) (DevicePreviousStopTime/100)) ; delay(25);
                                   EEPROM.write(MEMLOC_DeviceStopTime+1,(byte) (DevicePreviousStopTime%100)) ;                                   
 /*                                   
@@ -465,6 +466,7 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
                       
 ////////////////////////////////SENDING THE CHILLER KWH TO THE SCREEN
                                   T1 = "KWH :";
+                                  KWH = getKwh();
                                   T1+=KWH;
                                   T1.toCharArray(SData, 300);
                                   SendDataViaWire();
@@ -522,6 +524,7 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
     //        AverageONTime = TotalONTime/TotalNoOfOFFs;
     //        AverageOFFTime = TotalOFFTime / TotalNoOfOFFs;
 
+            Serial.println(String(" previous KWH :")+KWH);
             Serial.println(String(" No of ON times :")+TotalNoOfONs);
             Serial.println(String(" ON Time :")+TotalONTime);
             
@@ -650,6 +653,15 @@ GetClock(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
          void getMaxValue(){
           DeviceStartTemp = (int) EEPROM.read(MEMLOC_DeviceTempMaxSettings)*100 + (int) EEPROM.read(MEMLOC_DeviceTempMaxSettings+1);   //THE VALUE AT WHICH THE DEVICE TURNS ONN
           Serial.print("ee max-");Serial.println(DeviceStartTemp);
+         }
+
+         void storeKwh(float kwh){
+          EEPROM.put(MEMLOC_KWH,kwh);
+         }
+
+         float getKwh(){
+          float kwh = EEPROM.read(MEMLOC_KWH);
+          return kwh;
          }
 
          
